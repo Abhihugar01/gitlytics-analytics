@@ -20,7 +20,7 @@ services:
           name: gitlytics-db
           property: connectionString
       - key: REDIS_URL
-        value: # TO_BE_PROVIDED_BY_USER_FROM_UPSTASH
+        sync: false
       - key: GITHUB_CLIENT_ID
         sync: false
       - key: GITHUB_CLIENT_SECRET
@@ -29,8 +29,6 @@ services:
         sync: false
       - key: SECRET_KEY
         generateValue: true
-      - key: FRONTEND_URL
-        value: http://localhost:3000 # Keep for dev, but ignored in prod
 
   # Celery Worker
   - type: worker
@@ -45,7 +43,7 @@ services:
           name: gitlytics-db
           property: connectionString
       - key: REDIS_URL
-        value: # TO_BE_PROVIDED_BY_USER_FROM_UPSTASH
+        sync: false
       - key: GITHUB_CLIENT_ID
         sync: false
       - key: GEMINI_API_KEY
