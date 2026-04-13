@@ -1,5 +1,5 @@
 services:
-  # Monolith: Backend API + Frontend UI
+  # Unified Monolith: Backend API + UI + AI Worker (All in one free service)
   - type: web
     name: gitlytics-app
     plan: free
@@ -11,7 +11,10 @@ services:
       rm -rf backend/app/static && mv frontend/dist backend/app/static
       # 3. Install Backend Deps
       pip install -r backend/requirements.txt
-    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: |
+      # Start AI Worker in background and then start API
+      cd backend && celery -A app.tasks.analysis.celery worker --loglevel=info &
+      cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0
@@ -29,25 +32,6 @@ services:
         sync: false
       - key: SECRET_KEY
         generateValue: true
-
-  # Celery Worker
-  - type: worker
-    name: gitlytics-worker
-    plan: free
-    runtime: python
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && celery -A app.tasks.analysis.celery worker --loglevel=info
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: gitlytics-db
-          property: connectionString
-      - key: REDIS_URL
-        sync: false
-      - key: GITHUB_CLIENT_ID
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
 
 databases:
   - name: gitlytics-db
