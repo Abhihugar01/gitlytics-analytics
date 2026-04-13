@@ -5,10 +5,15 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Sanitize Redis URL for Upstash (ensure SSL and no trailing slashes)
+redis_url = settings.REDIS_URL.strip().rstrip('/')
+if redis_url.startswith("redis://") and "upstash.io" in redis_url:
+    redis_url = redis_url.replace("redis://", "rediss://", 1)
+
 celery = Celery(
     "gitlytics",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL,
+    broker=f"{redis_url}?ssl_cert_reqs=none",
+    backend=f"{redis_url}?ssl_cert_reqs=none",
 )
 
 celery.conf.update(
