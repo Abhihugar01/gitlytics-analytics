@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:password@localhost:5432/gitlytics"
     REDIS_URL: str = "redis://localhost:6379/0"
     FRONTEND_URL: str = "http://localhost:3000"
+    GEMINI_API_KEY: str = ""
 
     class Config:
         env_file = ".env"

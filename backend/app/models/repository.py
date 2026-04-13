@@ -38,6 +38,10 @@ class RepoAnalysis(Base):
     pr_stats = Column(JSON, nullable=True)
     stars_trend = Column(JSON, nullable=True)
     popularity_score = Column(Float, nullable=True)
+    health_score = Column(Float, nullable=True)
+    security_alerts = Column(JSON, nullable=True)
+    developer_metrics = Column(JSON, nullable=True)
+    ai_summary = Column(Text, nullable=True)
     analysis_date = Column(DateTime(timezone=True), server_default=func.now())
 
     repository = relationship("Repository", back_populates="analysis")

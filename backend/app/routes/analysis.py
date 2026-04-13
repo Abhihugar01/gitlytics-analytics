@@ -85,19 +85,25 @@ async def get_global_metrics(user_id: int, db: AsyncSession = Depends(get_db)):
     analyses = analysis_result.scalars().all()
     
     avg_popularity = sum(a.popularity_score for a in analyses) / len(analyses) if analyses else 0
+    avg_health = sum(a.health_score or 50 for a in analyses) / len(analyses) if analyses else 0
     
     # Language aggregate
     global_langs = {}
+    total_alerts = 0
     for a in analyses:
+        if a.security_alerts:
+            total_alerts += len(a.security_alerts)
         if a.language_breakdown:
             for lang, count in a.language_breakdown.items():
-                global_langs[lang] = global_langs.get(lang, 0) + count
+                global_langs[lang] = global_langs.get(lang, 0) + (count if isinstance(count, (int, float)) else 0)
 
     return {
         "total_repos": repo_count,
         "total_stars": total_stars,
         "total_forks": total_forks,
         "average_popularity": round(avg_popularity, 2),
+        "average_health": round(avg_health, 2),
+        "total_security_alerts": total_alerts,
         "global_languages": global_langs,
         "rank": "Silver Artisan" if total_stars < 10 else "Gold Architect" if total_stars < 50 else "Platinum Legend"
     }
@@ -114,7 +120,11 @@ async def compare_repos(repo_a: int, repo_b: int, user_id: int, db: AsyncSession
         a = res.scalar_one_or_none()
         return {
             "repo": {"id": repo.id, "name": repo.name, "stars": repo.stars, "forks": repo.forks},
-            "analysis": {"popularity_score": a.popularity_score if a else None, "language_breakdown": a.language_breakdown if a else None},
+            "analysis": {
+                "popularity_score": a.popularity_score if a else None, 
+                "health_score": a.health_score if a else None,
+                "language_breakdown": a.language_breakdown if a else None
+            },
         }
 
     return {"repo_a": await _fetch(repo_a), "repo_b": await _fetch(repo_b)}
@@ -130,23 +140,21 @@ async def get_repo_insights(repo_id: int, user_id: int, db: AsyncSession = Depen
 
     insights = []
     
+    # AI Summary focus
+    if a.ai_summary:
+        insights.append({"type": "ai", "text": a.ai_summary, "trend": "stable"})
+
     # Velocity Insight
     commit_history = a.commit_frequency or {}
-    total_commits = sum(commit_history.values())
+    total_commits = sum(v for v in commit_history.values() if isinstance(v, (int, float)))
     if total_commits > 50:
         insights.append({"type": "velocity", "text": "High velocity project with consistent momentum.", "trend": "up"})
     else:
         insights.append({"type": "velocity", "text": "Early stage development pace detected.", "trend": "stable"})
 
-    # Community Insight
-    if a.popularity_score > 5.0:
-        insights.append({"type": "community", "text": "Strong community traction and external interest.", "trend": "up"})
-    
-    # Maintenance Insight
-    pr_data = a.pr_stats or {}
-    merged = pr_data.get("merged", 0)
-    if merged > 10:
-        insights.append({"type": "health", "text": "Healthy PR flow with high merge efficiency.", "trend": "up"})
+    # Security Alert
+    if a.security_alerts:
+        insights.append({"type": "security", "text": f"Detected {len(a.security_alerts)} active security vulnerabilities.", "trend": "down"})
 
     return insights
 
@@ -171,6 +179,11 @@ async def generate_pdf_report(repo_id: int, user_id: int, db: AsyncSession = Dep
     pdf.cell(0, 10, f"Generated for {repo.full_name}", ln=True, align='C')
     pdf.ln(10)
 
+    # Health Indicator
+    pdf.set_font("helvetica", 'B', 16)
+    pdf.cell(0, 10, f"Health Score: {a.health_score or 'N/A'}/100", ln=True)
+    pdf.ln(5)
+
     # Stats
     pdf.set_font("helvetica", 'B', 16)
     pdf.cell(0, 10, "Core Metrics", ln=True)
@@ -179,6 +192,21 @@ async def generate_pdf_report(repo_id: int, user_id: int, db: AsyncSession = Dep
     pdf.cell(0, 8, f"- Forks: {repo.forks}", ln=True)
     pdf.cell(0, 8, f"- Popularity Score: {a.popularity_score}", ln=True)
     pdf.ln(5)
+
+    # Security
+    pdf.set_font("helvetica", 'B', 16)
+    pdf.cell(0, 10, "Security Posture", ln=True)
+    pdf.set_font("helvetica", '', 12)
+    pdf.cell(0, 8, f"- Alerts Detected: {len(a.security_alerts) if a.security_alerts else 0}", ln=True)
+    pdf.ln(5)
+
+    # AI Pulse
+    if a.ai_summary:
+        pdf.set_font("helvetica", 'B', 16)
+        pdf.cell(0, 10, "AI Analysis Executive Summary", ln=True)
+        pdf.set_font("helvetica", 'I', 11)
+        pdf.multi_cell(0, 8, a.ai_summary)
+        pdf.ln(5)
 
     # Languages
     pdf.set_font("helvetica", 'B', 16)
@@ -227,5 +255,9 @@ async def get_repo_analysis(repo_id: int, user_id: int, db: AsyncSession = Depen
         "pr_stats": analysis.pr_stats,
         "stars_trend": analysis.stars_trend,
         "popularity_score": analysis.popularity_score,
+        "health_score": analysis.health_score,
+        "security_alerts": analysis.security_alerts,
+        "ai_summary": analysis.ai_summary,
+        "developer_metrics": analysis.developer_metrics,
         "analysis_date": str(analysis.analysis_date),
     }

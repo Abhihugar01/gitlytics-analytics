@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const WS_URL = API_BASE.replace('http', 'ws');
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -26,8 +27,17 @@ export const analysisAPI = {
   getGlobal: (userId) => api.get('/analysis/global', { params: { user_id: userId } }),
   getInsights: (repoId, userId) => api.get(`/analysis/${repoId}/insights`, { params: { user_id: userId } }),
   getReportUrl: (repoId, userId) => `${API_BASE}/analysis/${repoId}/report?user_id=${userId}`,
+  getTaskWS: (taskId) => `${WS_URL}/ws/task/${taskId}`,
+  getActivityWS: (userId) => `${WS_URL}/ws/activity/${userId}`,
   compare: (repoA, repoB, userId) =>
     api.get('/analysis/compare', { params: { repo_a: repoA, repo_b: repoB, user_id: userId } }),
+};
+
+export const settingsAPI = {
+  getNotifications: (userId) => api.get('/settings/notifications', { params: { user_id: userId } }),
+  updateNotifications: (userId, data) => api.patch('/settings/notifications', data, { params: { user_id: userId } }),
+  addRule: (userId, rule) => api.post('/settings/rules', rule, { params: { user_id: userId } }),
+  deleteRule: (userId, idx) => api.delete(`/settings/rules/${idx}`, { params: { user_id: userId } }),
 };
 
 export default api;

@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import async_engine, Base
-from app.routes import auth, repos, analysis
+from app.routes import auth, repos, analysis, ws, settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,6 +27,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(repos.router)
 app.include_router(analysis.router)
+app.include_router(ws.router)
+app.include_router(settings.router)
 
 
 @app.on_event("startup")

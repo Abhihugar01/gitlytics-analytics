@@ -101,3 +101,20 @@ class GitHubService:
             if r.status_code != 200:
                 return []
             return r.json()
+
+    async def get_security_alerts(self, full_name: str) -> List[Dict]:
+        """Fetch Dependabot alerts for the repository."""
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Note: This requires 'security_events' scope
+            r = await client.get(f"{GITHUB_API}/repos/{full_name}/dependabot/alerts", headers=self.headers)
+            if r.status_code == 200:
+                return r.json()
+            return []
+
+    async def get_org_repos(self, org_name: str) -> List[Dict]:
+        """Fetch repositories for a GitHub organization."""
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            r = await client.get(f"{GITHUB_API}/orgs/{org_name}/repos", headers=self.headers, params={"per_page": 100})
+            if r.status_code == 200:
+                return r.json()
+            return []

@@ -1,11 +1,22 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+
+// Core Pages
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import RepoDetail from './pages/RepoDetail';
 import Compare from './pages/Compare';
 import Global from './pages/Global';
 import Feed from './pages/Feed';
+
+// New Advanced Pages
+import AIPulse from './pages/AIPulse';
+import DevActivity from './pages/DevActivity';
+import SecurityHub from './pages/SecurityHub';
+import RiskAudit from './pages/RiskAudit';
+import FlowMetrics from './pages/FlowMetrics';
+import SmartAlerts from './pages/SmartAlerts';
+
 import DashboardLayout from './layouts/DashboardLayout';
 import useStore from './store/useStore';
 
@@ -46,6 +57,14 @@ function App() {
             <Route path="compare" element={<Compare />} />
             <Route path="global" element={<Global />} />
             <Route path="activity" element={<Feed />} />
+            
+            {/* New Routes */}
+            <Route path="ai-pulse" element={<AIPulse />} />
+            <Route path="dev-velocity" element={<DevActivity />} />
+            <Route path="security-hub" element={<SecurityHub />} />
+            <Route path="health-fleet" element={<RiskAudit />} />
+            <Route path="flow-metrics" element={<FlowMetrics />} />
+            <Route path="alerts" element={<SmartAlerts />} />
           </Route>
         </Routes>
       </Router>

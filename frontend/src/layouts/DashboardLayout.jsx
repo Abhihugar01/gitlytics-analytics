@@ -1,15 +1,44 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, GitBranch, BarChart3, LogOut, Github, ArrowLeftRight } from 'lucide-react';
+import { 
+  LayoutDashboard, GitBranch, BarChart3, LogOut, Github, ArrowLeftRight,
+  Sparkles, Users, ShieldCheck, Activity, Zap, Bell
+} from 'lucide-react';
 import useStore from '../store/useStore';
 import { useEffect } from 'react';
 import { authAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
-const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
-  { to: '/dashboard/compare', icon: ArrowLeftRight, label: 'Compare' },
-  { to: '/dashboard/global', icon: BarChart3, label: 'Global Impact' },
-  { to: '/dashboard/activity', icon: GitBranch, label: 'Activity Feed' },
+const navSections = [
+  {
+    label: 'Core',
+    items: [
+      { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
+      { to: '/dashboard/activity', icon: GitBranch, label: 'Activity Feed' },
+    ]
+  },
+  {
+    label: 'Intelligence',
+    items: [
+      { to: '/dashboard/ai-pulse', icon: Sparkles, label: 'AI Pulse Hub' },
+      { to: '/dashboard/compare', icon: ArrowLeftRight, label: 'Compare' },
+      { to: '/dashboard/global', icon: BarChart3, label: 'Global Impact' },
+    ]
+  },
+  {
+    label: 'SaaS Analytics',
+    items: [
+      { to: '/dashboard/dev-velocity', icon: Users, label: 'Dev Velocity' },
+      { to: '/dashboard/health-fleet', icon: Activity, label: 'Health Fleet' },
+      { to: '/dashboard/security-hub', icon: ShieldCheck, label: 'Security Hub' },
+      { to: '/dashboard/flow-metrics', icon: Zap, label: 'Advanced Flow' },
+    ]
+  },
+  {
+    label: 'Control',
+    items: [
+        { to: '/dashboard/alerts', icon: Bell, label: 'Smart Alerts' },
+    ]
+  }
 ];
 
 export default function DashboardLayout() {
@@ -48,23 +77,30 @@ export default function DashboardLayout() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map(({ to, icon: Icon, label, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? 'bg-brand-500/15 text-brand-400 shadow-sm'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-surface-200/60'
-                }`
-              }
-            >
-              <Icon size={18} />
-              {label}
-            </NavLink>
+        <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto scrollbar-hide">
+          {navSections.map((section) => (
+            <div key={section.label} className="space-y-1">
+              <h3 className="px-4 text-[10px] font-bold text-gray-600 uppercase tracking-[2px] mb-2">
+                {section.label}
+              </h3>
+              {section.items.map(({ to, icon: Icon, label, end }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                      isActive
+                        ? 'bg-brand-500/15 text-brand-400 shadow-sm'
+                        : 'text-gray-400 hover:text-gray-200 hover:bg-surface-200/60'
+                    }`
+                  }
+                >
+                  <Icon size={18} className="group-hover:scale-110 transition-transform" />
+                  {label}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
 
@@ -94,8 +130,10 @@ export default function DashboardLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto bg-grid">
-        <div className="p-8 max-w-7xl mx-auto">
+      <main className="flex-1 overflow-y-auto bg-grid relative">
+        {/* Subtle top gradient */}
+        <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-brand-500/5 to-transparent pointer-events-none" />
+        <div className="p-8 max-w-7xl mx-auto relative">
           <Outlet />
         </div>
       </main>

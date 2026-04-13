@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, func
+from sqlalchemy import Column, Integer, String, Text, DateTime, JSON, func
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -17,6 +17,8 @@ class User(Base):
     followers = Column(Integer, default=0)
     following = Column(Integer, default=0)
     access_token = Column(Text, nullable=False)
+    notification_settings = Column(JSON, default=lambda: {"email": True, "slack": True, "push": False})
+    alert_rules = Column(JSON, default=list)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
