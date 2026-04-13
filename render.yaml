@@ -48,7 +48,7 @@ services:
     name: gitlytics-frontend
     plan: free
     buildCommand: cd frontend && npm install && npm run build
-    staticPublishDir: frontend/dist
+    publishDir: frontend/dist
     envVars:
       - key: VITE_API_URL
         fromService:
