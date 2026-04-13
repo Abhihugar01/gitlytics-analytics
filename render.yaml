@@ -1,10 +1,16 @@
 services:
-  # Backend API
+  # Monolith: Backend API + Frontend UI
   - type: web
-    name: gitlytics-api
+    name: gitlytics-app
     plan: free
     runtime: python
-    buildCommand: pip install -r backend/requirements.txt
+    buildCommand: |
+      # 1. Build Frontend
+      cd frontend && npm install && npm run build && cd ..
+      # 2. Move to Backend Static Folder
+      rm -rf backend/app/static && mv frontend/dist backend/app/static
+      # 3. Install Backend Deps
+      pip install -r backend/requirements.txt
     startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
@@ -23,11 +29,13 @@ services:
         sync: false
       - key: SECRET_KEY
         generateValue: true
+      - key: FRONTEND_URL
+        value: http://localhost:3000 # Keep for dev, but ignored in prod
 
   # Celery Worker
   - type: worker
     name: gitlytics-worker
-    plan: free # Note: Render free tier restrictions may apply to workers
+    plan: free
     runtime: python
     buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && celery -A app.tasks.analysis.celery worker --loglevel=info
@@ -42,19 +50,6 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
-
-  # Frontend (Static Site)
-  - type: static_site
-    name: gitlytics-frontend
-    plan: free
-    buildCommand: cd frontend && npm install && npm run build
-    publishDir: frontend/dist
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: gitlytics-api
-          property: host
 
 databases:
   - name: gitlytics-db
