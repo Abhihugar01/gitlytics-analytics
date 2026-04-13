@@ -1,5 +1,5 @@
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -24,20 +24,38 @@ def create_token(user_id: int) -> str:
     return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
+def get_effective_redirect_uri(request: Request) -> str:
+    """Dynamically determine the redirect URI based on the request."""
+    # If GITHUB_REDIRECT_URI is explicitly set and not empty, use it.
+    if settings.GITHUB_REDIRECT_URI:
+        return settings.GITHUB_REDIRECT_URI
+    
+    # Otherwise, build it from the request
+    # On Render, we need to ensure https
+    scheme = "https" if "render.com" in str(request.base_url) else request.url.scheme
+    base = str(request.base_url).rstrip("/")
+    if "localhost" not in base and "render.com" in base:
+        base = base.replace("http://", "https://")
+    
+    return f"{base}/auth/github/callback"
+
+
 @router.get("/github")
-async def github_login():
+async def github_login(request: Request):
     """Redirect URL for GitHub OAuth login."""
+    redirect_uri = get_effective_redirect_uri(request)
     params = (
         f"client_id={settings.GITHUB_CLIENT_ID}"
-        f"&redirect_uri={settings.GITHUB_REDIRECT_URI}"
+        f"&redirect_uri={redirect_uri}"
         f"&scope=repo+user"
     )
     return RedirectResponse(url=f"{GITHUB_OAUTH_URL}?{params}")
 
 
 @router.get("/github/callback")
-async def github_callback(code: str, db: AsyncSession = Depends(get_db)):
+async def github_callback(request: Request, code: str, db: AsyncSession = Depends(get_db)):
     """Handle GitHub OAuth callback, exchange code for token, upsert user."""
+    redirect_uri = get_effective_redirect_uri(request)
     async with httpx.AsyncClient(timeout=20.0) as client:
         # Exchange code for access token
         token_resp = await client.post(
@@ -46,7 +64,7 @@ async def github_callback(code: str, db: AsyncSession = Depends(get_db)):
                 "client_id": settings.GITHUB_CLIENT_ID,
                 "client_secret": settings.GITHUB_CLIENT_SECRET,
                 "code": code,
-                "redirect_uri": settings.GITHUB_REDIRECT_URI,
+                "redirect_uri": redirect_uri,
             },
             headers={"Accept": "application/json"},
         )
@@ -97,8 +115,10 @@ async def github_callback(code: str, db: AsyncSession = Depends(get_db)):
     await db.refresh(user)
 
     jwt_token = create_token(user.id)
+    # Redirect back to frontend root with token and user_id
+    # In monolith, this is just /
     return RedirectResponse(
-        url=f"{settings.FRONTEND_URL}/?token={jwt_token}&user_id={user.id}"
+        url=f"/?token={jwt_token}&user_id={user.id}"
     )
 
 
